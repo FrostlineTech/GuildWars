@@ -1,0 +1,33 @@
+name: GuildWars
+version: '${project.version}'
+main: com.guildwars.GuildWars
+api-version: '1.20'
+authors: [DakotaFryberger]
+description: A factions plugin for Minecraft servers
+commands:
+  guild:
+    description: Main command for guild management
+    usage: /<command> [create|join|leave|info|invite|kick|promote|demote]
+    aliases: [g, gw]
+  guilds:
+    description: List all guilds on the server
+    usage: /<command>
+    aliases: [glist]
+  guildhelp:
+    description: Shows help information for the GuildWars plugin
+    usage: /<command> [topic]
+    aliases: [gwhelp, ghelp]
+  support:
+    description: Get support for the GuildWars plugin
+    usage: /<command>
+    aliases: [gwsupport]
+permissions:
+  guildwars.admin:
+    description: Gives access to all GuildWars commands
+    default: op
+  guildwars.create:
+    description: Allows creation of guilds
+    default: true
+  guildwars.join:
+    description: Allows joining guilds
+    default: true
