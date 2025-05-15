@@ -22,13 +22,8 @@
   - Added compatibility with Minecraft versions 1.17 through 1.21.5
   - Updated API dependencies to support a wider range of servers
 
-- **Security Enhancements**:
-  - Improved .gitignore to better protect sensitive configuration files
+### Bug Fixes
+- Fixed Guilds not deleting when using the `/guildadmin delete` command or `/guildadmin delete <guildname>` command
+- Report any bugs at https://discord.gg/FGUEEj6k7k
 
-## Version 1.2 - Previous Release
 
-- Initial public release with core guild functionality
-- Guild management system (create, join, leave, etc.)
-- Territory claiming and protection
-- Diplomacy system (alliances, enemies, wars)
-- Basic permission system
