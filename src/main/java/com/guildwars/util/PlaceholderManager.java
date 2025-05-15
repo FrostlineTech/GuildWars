@@ -17,6 +17,16 @@ public class PlaceholderManager {
     private String guildTag;
     private String leaderTag;
     private String officerTag;
+    private String memberTag;
+    
+    // Color codes for different roles
+    private String guildColor;
+    private String leaderColor;
+    private String officerColor;
+    private String memberColor;
+    
+    // Chat format
+    private String chatFormat;
 
     /**
      * Creates a new PlaceholderManager.
@@ -37,6 +47,17 @@ public class PlaceholderManager {
         guildTag = config.getString("placeholders.tags.guild", "[G]");
         leaderTag = config.getString("placeholders.tags.leader", "[Leader]");
         officerTag = config.getString("placeholders.tags.officer", "[Officer]");
+        memberTag = config.getString("placeholders.tags.member", "[Member]");
+        
+        // Load color codes
+        guildColor = config.getString("placeholders.colors.guild", "&7").replace('&', '§');
+        leaderColor = config.getString("placeholders.colors.leader", "&c").replace('&', '§');
+        officerColor = config.getString("placeholders.colors.officer", "&9").replace('&', '§');
+        memberColor = config.getString("placeholders.colors.member", "&a").replace('&', '§');
+        
+        // Load chat format
+        chatFormat = config.getString("placeholders.chat-format", 
+                "&8[&r%guild_name%&8] %role_color%%guild_role% &r%player_name%&8: &r%message%").replace('&', '§');
     }
 
     /**
@@ -86,7 +107,7 @@ public class PlaceholderManager {
             return officerTag;
         }
         
-        return "";
+        return memberTag; // Return member tag for regular members
     }
 
     /**
@@ -102,6 +123,56 @@ public class PlaceholderManager {
         }
         
         return plugin.getServer().getOfflinePlayer(guild.getLeader()).getName();
+    }
+    
+    /**
+     * Gets the role color for a player.
+     *
+     * @param player The player
+     * @return The role color code, or empty string if player is not in a guild
+     */
+    public String getRoleColor(Player player) {
+        Guild guild = guildService.getGuildByPlayer(player.getUniqueId());
+        if (guild == null) {
+            return "";
+        }
+        
+        if (guild.isLeader(player.getUniqueId())) {
+            return leaderColor;
+        } else if (guild.isOfficer(player.getUniqueId())) {
+            return officerColor;
+        }
+        
+        return memberColor;
+    }
+    
+    /**
+     * Formats a chat message with guild information.
+     *
+     * @param player The player sending the message
+     * @param message The message content
+     * @return The formatted chat message with guild information
+     */
+    public String formatChatMessage(Player player, String message) {
+        Guild guild = guildService.getGuildByPlayer(player.getUniqueId());
+        if (guild == null) {
+            return null; // Return null to indicate no guild formatting should be applied
+        }
+        
+        String formatted = chatFormat;
+        formatted = formatted.replace("%message%", message);
+        formatted = replacePlaceholders(player, formatted);
+        
+        return formatted;
+    }
+    
+    /**
+     * Gets the guild color code.
+     *
+     * @return The guild color code
+     */
+    public String getGuildColor() {
+        return guildColor;
     }
 
     /**
@@ -121,6 +192,8 @@ public class PlaceholderManager {
         result = result.replace("%guild_tag%", getGuildTag(player));
         result = result.replace("%guild_role%", getRoleTag(player));
         result = result.replace("%guild_leader%", getGuildLeader(player));
+        result = result.replace("%player_name%", player.getName());
+        result = result.replace("%role_color%", getRoleColor(player));
         
         return result;
     }

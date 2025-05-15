@@ -9,6 +9,7 @@ import org.bukkit.plugin.Plugin;
 public class MessageUtil {
     
     private static Plugin plugin;
+    private static String groupTerm = "guild";
     
     /**
      * Initializes the message utility with a plugin instance.
@@ -17,6 +18,11 @@ public class MessageUtil {
      */
     public static void init(Plugin pluginInstance) {
         plugin = pluginInstance;
+        
+        // Load custom group term from config
+        if (plugin != null) {
+            groupTerm = plugin.getConfig().getString("general.group-term", "guild");
+        }
     }
     
     /**
@@ -111,11 +117,52 @@ public class MessageUtil {
      * This is used when the plugin configuration is reloaded.
      */
     public static void reload() {
-        // Currently just re-initializes with the existing plugin instance
+        // Re-initializes with the existing plugin instance
         if (plugin != null) {
             Plugin currentPlugin = plugin;
             close();
             init(currentPlugin);
         }
+    }
+    
+    /**
+     * Gets the configured group term (guild, faction, clan, etc.)
+     * 
+     * @return The configured group term
+     */
+    public static String getGroupTerm() {
+        return groupTerm;
+    }
+    
+    /**
+     * Gets the configured group term with first letter capitalized
+     * 
+     * @return The configured group term, capitalized
+     */
+    public static String getCapitalizedGroupTerm() {
+        if (groupTerm == null || groupTerm.isEmpty()) {
+            return "Guild";
+        }
+        return groupTerm.substring(0, 1).toUpperCase() + groupTerm.substring(1);
+    }
+    
+    /**
+     * Replaces all occurrences of the word "guild" in a message with the configured group term
+     * 
+     * @param message The message to process
+     * @return The message with the group term replaced
+     */
+    public static String replaceGroupTerm(String message) {
+        if (message == null || groupTerm.equals("guild")) {
+            return message;
+        }
+        
+        // Replace various forms of the word "guild"
+        String result = message;
+        result = result.replaceAll("(?i)\\bguild\\b", groupTerm);
+        result = result.replaceAll("(?i)\\bGuild\\b", getCapitalizedGroupTerm());
+        result = result.replaceAll("(?i)\\bGUILD\\b", groupTerm.toUpperCase());
+        
+        return result;
     }
 }

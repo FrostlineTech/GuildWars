@@ -1,5 +1,11 @@
 # GuildWars Configuration
 
+# General settings
+general:
+  # The term used to refer to guilds (e.g., 'guild', 'faction', 'clan', 'club')
+  # This affects display messages but not commands
+  group-term: 'guild'
+
 # Command aliases
 commands:
   # Custom command alias for the main guild command
@@ -14,6 +20,15 @@ placeholders:
     guild: '[G]'
     leader: '[Leader]'
     officer: '[Officer]'
+    member: '[Member]'
+  # Chat colors for different guild roles (using Minecraft color codes)
+  colors:
+    guild: '&7'
+    leader: '&c'
+    officer: '&9'
+    member: '&a'
+  # Chat format
+  chat-format: '&8[&r%guild_name%&8] %role_color%%guild_role% &r%player_name%&8: &r%message%'
 
 # Guild settings
 guilds:
