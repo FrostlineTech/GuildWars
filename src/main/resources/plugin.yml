@@ -1,7 +1,7 @@
 name: GuildWars
-version: '${project.version}'
+version: '1.2'
 main: com.guildwars.GuildWars
-api-version: '1.20'
+api-version: '1.17'
 authors: [DakotaFryberger]
 description: A factions plugin for Minecraft servers
 commands:
@@ -21,6 +21,11 @@ commands:
     description: Get support for the GuildWars plugin
     usage: /<command>
     aliases: [gwsupport]
+  guildadmin:
+    description: Administrative commands for the GuildWars plugin
+    usage: /<command> [delete|reload|about]
+    aliases: [gwadmin, gadmin]
+    permission: guildwars.admin
 permissions:
   guildwars.admin:
     description: Gives access to all GuildWars commands
@@ -31,3 +36,9 @@ permissions:
   guildwars.join:
     description: Allows joining guilds
     default: true
+  guildwars.admin.delete:
+    description: Allows deleting guilds as an administrator
+    default: op
+  guildwars.admin.reload:
+    description: Allows reloading the plugin configuration
+    default: op

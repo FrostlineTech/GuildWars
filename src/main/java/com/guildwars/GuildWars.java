@@ -1,5 +1,6 @@
 package com.guildwars;
 
+import com.guildwars.commands.AdminCommand;
 import com.guildwars.commands.GuildCommand;
 import com.guildwars.commands.GuildsCommand;
 import com.guildwars.commands.HelpCommand;
@@ -7,16 +8,20 @@ import com.guildwars.commands.SupportCommand;
 import com.guildwars.database.GuildService;
 import com.guildwars.storage.YamlStorageService;
 import com.guildwars.util.MessageUtil;
+import com.guildwars.util.PlaceholderManager;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Main class for the GuildWars plugin.
+ * Version: 1.1-SNAPSHOT
  */
 public class GuildWars extends JavaPlugin {
 
     private static GuildWars instance;
     private YamlStorageService storageService;
     private GuildService guildService;
+    private PlaceholderManager placeholderManager;
 
     @Override
     public void onEnable() {
@@ -34,6 +39,9 @@ public class GuildWars extends JavaPlugin {
         
         // Initialize guild service
         initializeGuildService();
+        
+        // Initialize placeholder manager
+        initializePlaceholderManager();
         
         // Register commands
         registerCommands();
@@ -63,17 +71,45 @@ public class GuildWars extends JavaPlugin {
      * Register all commands for the plugin.
      */
     private void registerCommands() {
+        // Get custom command alias from config
+        String mainCommandAlias = getConfig().getString("commands.main-command-alias", "guild");
+        
         // Register guild command
-        getCommand("guild").setExecutor(new GuildCommand(this));
+        PluginCommand guildCommand = getCommand("guild");
+        if (guildCommand != null) {
+            GuildCommand executor = new GuildCommand(this);
+            guildCommand.setExecutor(executor);
+            
+            // Add custom alias if it's different from the default
+            if (!mainCommandAlias.equalsIgnoreCase("guild") && !mainCommandAlias.isEmpty()) {
+                guildCommand.getAliases().add(mainCommandAlias.toLowerCase());
+                getLogger().info("Registered custom alias '" + mainCommandAlias + "' for the guild command");
+            }
+        }
         
         // Register guilds command
-        getCommand("guilds").setExecutor(new GuildsCommand(this));
+        PluginCommand guildsCommand = getCommand("guilds");
+        if (guildsCommand != null) {
+            guildsCommand.setExecutor(new GuildsCommand(this));
+        }
         
         // Register help command
-        getCommand("guildhelp").setExecutor(new HelpCommand(this));
+        PluginCommand helpCommand = getCommand("guildhelp");
+        if (helpCommand != null) {
+            helpCommand.setExecutor(new HelpCommand(this));
+        }
         
         // Register support command
-        getCommand("support").setExecutor(new SupportCommand(this));
+        PluginCommand supportCommand = getCommand("support");
+        if (supportCommand != null) {
+            supportCommand.setExecutor(new SupportCommand(this));
+        }
+        
+        // Register admin command
+        PluginCommand adminCommand = getCommand("guildadmin");
+        if (adminCommand != null) {
+            adminCommand.setExecutor(new AdminCommand(this));
+        }
     }
     
     /**
@@ -115,6 +151,24 @@ public class GuildWars extends JavaPlugin {
     }
     
     /**
+     * Initialize the placeholder manager.
+     */
+    private void initializePlaceholderManager() {
+        placeholderManager = new PlaceholderManager(this);
+        getLogger().info("Placeholder manager initialized.");
+    }
+    
+    /**
+     * Reload the placeholder manager.
+     */
+    public void reloadPlaceholders() {
+        if (placeholderManager != null) {
+            placeholderManager.reloadTags();
+            getLogger().info("Placeholders reloaded.");
+        }
+    }
+    
+    /**
      * Get the plugin instance.
      * 
      * @return The plugin instance
@@ -139,5 +193,14 @@ public class GuildWars extends JavaPlugin {
      */
     public GuildService getGuildService() {
         return guildService;
+    }
+    
+    /**
+     * Get the placeholder manager.
+     * 
+     * @return The placeholder manager
+     */
+    public PlaceholderManager getPlaceholderManager() {
+        return placeholderManager;
     }
 }

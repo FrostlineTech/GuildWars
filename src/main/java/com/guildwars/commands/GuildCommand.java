@@ -10,20 +10,24 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 // Using non-deprecated Bungee ChatColor instead of Bukkit ChatColor
 import net.md_5.bungee.api.ChatColor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Main command handler for the /guild command.
  */
-public class GuildCommand implements CommandExecutor {
+public class GuildCommand implements CommandExecutor, TabCompleter {
 
     private final GuildWars plugin;
     private final GuildService guildService;
@@ -1327,5 +1331,85 @@ public class GuildCommand implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "Failed to disband guild: Invalid guild ID format.");
             plugin.getLogger().warning("Failed to disband guild with ID " + guild.getId() + ": " + e.getMessage());
         }
+    }
+    
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        List<String> completions = new ArrayList<>();
+        
+        if (!(sender instanceof Player)) {
+            return completions;
+        }
+        
+        if (args.length == 1) {
+            // First argument - subcommands
+            String[] subCommands = {
+                "create", "join", "leave", "info", "invite", "kick", 
+                "promote", "demote", "claim", "unclaim", "home", "sethome", 
+                "ally", "enemy", "war", "disband"
+            };
+            String input = args[0].toLowerCase();
+            
+            for (String subCommand : subCommands) {
+                if (subCommand.startsWith(input)) {
+                    completions.add(subCommand);
+                }
+            }
+        } else if (args.length == 2) {
+            String subCommand = args[0].toLowerCase();
+            String input = args[1].toLowerCase();
+            
+            switch (subCommand) {
+                case "info":
+                case "join":
+                case "ally":
+                case "enemy":
+                case "war":
+                    // Complete with guild names
+                    List<String> guildNames = guildService.getAllGuilds().stream()
+                            .map(Guild::getName)
+                            .filter(name -> name.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                    completions.addAll(guildNames);
+                    break;
+                case "invite":
+                case "kick":
+                case "promote":
+                case "demote":
+                    // Complete with player names
+                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                        if (onlinePlayer.getName().toLowerCase().startsWith(input)) {
+                            completions.add(onlinePlayer.getName());
+                        }
+                    }
+                    break;
+                case "create":
+                    // Suggest a guild name if they haven't typed anything yet
+                    if (input.isEmpty()) {
+                        completions.add("<guildname>");
+                    }
+                    break;
+            }
+        } else if (args.length == 3) {
+            String subCommand = args[0].toLowerCase();
+            String input = args[2].toLowerCase();
+            
+            if (subCommand.equals("create")) {
+                // Suggest a tag if they haven't typed anything yet
+                if (input.isEmpty()) {
+                    completions.add("<tag>");
+                }
+            } else if (subCommand.equals("war")) {
+                // Suggest durations for war
+                String[] durations = {"30", "60", "90", "120"};
+                for (String duration : durations) {
+                    if (duration.startsWith(input)) {
+                        completions.add(duration);
+                    }
+                }
+            }
+        }
+        
+        return completions;
     }
 }

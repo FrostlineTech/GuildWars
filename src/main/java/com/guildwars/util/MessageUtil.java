@@ -105,4 +105,17 @@ public class MessageUtil {
     public static void close() {
         plugin = null;
     }
+    
+    /**
+     * Reloads the message utility.
+     * This is used when the plugin configuration is reloaded.
+     */
+    public static void reload() {
+        // Currently just re-initializes with the existing plugin instance
+        if (plugin != null) {
+            Plugin currentPlugin = plugin;
+            close();
+            init(currentPlugin);
+        }
+    }
 }

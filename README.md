@@ -1,4 +1,4 @@
-# GuildWars
+# GuildWars (v1.1-SNAPSHOT)
 
 > *Forge alliances, claim territory, and wage epic wars in this comprehensive factions plugin for Minecraft servers.*
 >
@@ -31,6 +31,10 @@ GuildWars is a powerful factions plugin for Minecraft servers that enables playe
 - **Data Storage**: Efficient file-based storage system
 - **Configuration Options**: Customize guild sizes, claim limits, and more
 - **Command System**: Comprehensive command set with proper permission handling
+- **Custom Aliases**: Configure custom command aliases in the config
+- **Placeholders**: Support for guild-related placeholders in chat
+- **Tab Completion**: Intelligent tab completion for all commands
+- **Admin Tools**: Comprehensive admin commands for server management
 
 ## Commands
 
@@ -63,10 +67,15 @@ GuildWars is a powerful factions plugin for Minecraft servers that enables playe
 - `/guilds` - List all guilds on the server
 - `/guildhelp` - Display help information
 
+### Admin Commands
+- `/guildadmin delete <guild>` - Delete a guild (requires permission)
+- `/guildadmin reload` - Reload the plugin configuration (requires permission)
+- `/guildadmin about` - Display detailed plugin information
+
 ## Technical Details
 
-- **Java Version**: Java 17+
-- **API**: Paper/Spigot API
+- **Java Version**: Java 21
+- **API**: Paper/Spigot API 1.20.4
 - **Build Tool**: Maven
 
 ## Installation
@@ -82,6 +91,17 @@ The plugin uses a combination of config.yml and environment variables for config
 
 ```yaml
 # Example config.yml
+# Command aliases
+commands:
+  main-command-alias: 'clan'  # Use /clan instead of /guild
+
+# Placeholders
+placeholders:
+  tags:
+    guild: '[G]'
+    leader: '[Leader]'
+    officer: '[Officer]'
+
 guilds:
   max-members: 20
   max-officers: 5
@@ -103,9 +123,29 @@ Developed by Dakota Fryberger as a portfolio project showcasing Java development
 
 This project is for portfolio demonstration purposes only. While the plugin is fully functional on Spigot servers, this GitHub repository is intended primarily for code showcase.
 
+## Permissions
+
+### Basic Permissions
+- `guildwars.create` - Allows creating guilds (default: true)
+- `guildwars.join` - Allows joining guilds (default: true)
+- `guildwars.admin` - Gives access to all GuildWars commands (default: op)
+
+### Admin Permissions
+- `guildwars.admin.delete` - Allows deleting guilds as an administrator (default: op)
+- `guildwars.admin.reload` - Allows reloading the plugin configuration (default: op)
+
+## Placeholders
+
+The following placeholders are available for use in chat plugins or other integrations:
+
+- `%guild_name%` - The name of the player's guild
+- `%guild_tag%` - The guild tag configured in the config
+- `%guild_role%` - The player's role tag in their guild (Leader/Officer)
+- `%guild_leader%` - The name of the guild's leader
+
 
 ## you can find the plugin here for instalattion and more information
-https://www.spigotmc.org/resources/guildwars-factions-plugin.124999/
+https://www.spigotmc.org/resources/guildwars-factions-plugin.124999/ 
 
 ## join the discord!! 
 https://discord.gg/FGUEEj6k7k

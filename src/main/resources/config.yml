@@ -1,0 +1,151 @@
+# GuildWars Configuration
+
+# Command aliases
+commands:
+  # Custom command alias for the main guild command
+  # This will allow players to use the specified alias instead of /guild
+  # Example: Setting this to 'clan' will allow players to use /clan instead of /guild
+  main-command-alias: 'guild'
+
+# Placeholders
+placeholders:
+  # Chat tags for different guild roles
+  tags:
+    guild: '[G]'
+    leader: '[Leader]'
+    officer: '[Officer]'
+
+# Guild settings
+guilds:
+  # Minimum number of players required to create a guild
+  min-players-to-create: 1
+  
+  # Maximum number of players allowed in a guild
+  max-players: 30
+  
+  # Cost to create a guild (if economy plugin is installed)
+  creation-cost: 1000.0
+  
+  # Cooldown between creating guilds (in hours)
+  creation-cooldown: 24
+  
+  # Maximum length of guild name
+  max-name-length: 16
+  
+  # Minimum length of guild name
+  min-name-length: 3
+  
+  # Whether to allow color codes in guild names
+  allow-color-codes: false
+  
+  # Guild home settings
+  home:
+    # Whether guilds can set homes
+    enabled: true
+    
+    # Cooldown between teleports (in seconds)
+    teleport-cooldown: 60
+    
+    # Delay before teleporting (in seconds)
+    teleport-delay: 3
+
+# Territory settings
+territory:
+  # Whether territory claiming is enabled
+  enabled: true
+  
+  # Maximum number of chunks a guild can claim
+  max-claims: 50
+  
+  # Cost per claim (if economy plugin is installed)
+  claim-cost: 100.0
+  
+  # Whether to allow claiming in specific worlds
+  worlds:
+    - 'world'
+    - 'world_nether'
+    - 'world_the_end'
+  
+  # Protection settings
+  protection:
+    # Whether to prevent non-members from breaking blocks
+    prevent-block-break: true
+    
+    # Whether to prevent non-members from placing blocks
+    prevent-block-place: true
+    
+    # Whether to prevent non-members from interacting with blocks
+    prevent-block-interact: true
+    
+    # Whether to prevent non-members from attacking members
+    prevent-pvp: true
+    
+    # Whether to prevent non-members from using items
+    prevent-item-use: true
+
+# War settings
+war:
+  # Whether war system is enabled
+  enabled: true
+  
+  # Minimum duration of war (in minutes)
+  min-duration: 30
+  
+  # Maximum duration of war (in minutes)
+  max-duration: 120
+  
+  # Cooldown between wars (in hours)
+  cooldown: 24
+  
+  # Whether to disable protection during wars
+  disable-protection: true
+  
+  # Whether to enable friendly fire during wars
+  friendly-fire: false
+
+# Relations settings
+relations:
+  # Whether alliance system is enabled
+  alliances-enabled: true
+  
+  # Maximum number of alliances a guild can have
+  max-alliances: 3
+  
+  # Whether enemy system is enabled
+  enemies-enabled: true
+  
+  # Maximum number of enemies a guild can have
+  max-enemies: 10
+
+# Permissions
+# These are the permissions used by the plugin
+# You can assign these to groups in your permissions plugin
+permissions:
+  # Basic permissions
+  guildwars.create: true      # Allows creating guilds
+  guildwars.join: true        # Allows joining guilds
+  
+  # Admin permissions
+  guildwars.admin: false      # Gives access to all GuildWars commands
+  guildwars.admin.delete: false # Allows deleting guilds as an administrator
+  guildwars.admin.reload: false # Allows reloading the plugin configuration
+
+# Messages
+messages:
+  prefix: '&8[&6GuildWars&8] &r'
+  guild-created: '&aGuild %guild% has been created!'
+  guild-disbanded: '&cGuild %guild% has been disbanded!'
+  guild-joined: '&aYou have joined %guild%!'
+  guild-left: '&cYou have left %guild%!'
+  player-invited: '&aYou have invited %player% to join %guild%!'
+  player-kicked: '&c%player% has been kicked from %guild%!'
+  player-promoted: '&a%player% has been promoted in %guild%!'
+  player-demoted: '&c%player% has been demoted in %guild%!'
+  territory-claimed: '&aTerritory claimed for %guild%!'
+  territory-unclaimed: '&cTerritory unclaimed from %guild%!'
+  war-declared: '&c%guild1% has declared war on %guild2%!'
+  war-ended: '&aThe war between %guild1% and %guild2% has ended!'
+  alliance-formed: '&a%guild1% has formed an alliance with %guild2%!'
+  alliance-broken: '&c%guild1% has broken their alliance with %guild2%!'
+  enemy-declared: '&c%guild1% has declared %guild2% as an enemy!'
+  enemy-removed: '&a%guild1% no longer considers %guild2% an enemy!'

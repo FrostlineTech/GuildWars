@@ -51,7 +51,6 @@ buildNumber.properties
 # Environment variables and sensitive information
 .env
 *.env
-config.yml
 *.db
 *.sqlite
 *.properties
@@ -62,6 +61,9 @@ test-server/
 
 # Database credentials and configuration
 src/main/resources/database.yml
+src/main/resources/secrets.yml
+src/main/resources/credentials.yml
+src/main/resources/*-secret.yml
 
 # OS specific files
 .DS_Store
