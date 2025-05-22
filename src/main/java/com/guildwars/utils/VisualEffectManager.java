@@ -62,6 +62,9 @@ public class VisualEffectManager {
         stand.setMarker(true);
         stand.setCustomName(displayText);
         stand.setCustomNameVisible(true);
+        // Make the armor stand completely invisible in the game
+        stand.setInvulnerable(true);
+        stand.setSilent(true);
         
         // Define the animation path (float upward and fade out)
         new BukkitRunnable() {
@@ -121,6 +124,12 @@ public class VisualEffectManager {
             newStand.setSmall(true);
             newStand.setMarker(true);
             newStand.setCustomNameVisible(true);
+            // Hide the entity's name tag to prevent "Armor Stand" text from showing
+            newStand.setCustomName(healthBar);
+            // Set the entity to be completely invisible
+            newStand.setInvulnerable(true);
+            // Make sure the armor stand is silent
+            newStand.setSilent(true);
             
             // Store reference to the armor stand
             healthDisplays.put(entity.getUniqueId(), newStand);

@@ -1,5 +1,5 @@
 name: GuildWars
-version: '1.4'
+version: '1.4.1 (hotfix)'
 main: com.guildwars.GuildWars
 api-version: '1.17'
 authors: [DakotaFryberger]

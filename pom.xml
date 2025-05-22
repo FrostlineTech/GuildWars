@@ -6,7 +6,7 @@
 
     <groupId>com.guildwars</groupId>
     <artifactId>GuildWars</artifactId>
-    <version>1.4</version>
+    <version>1.4.1 (hotfix)</version>
     <packaging>jar</packaging>
 
     <name>GuildWars</name>
