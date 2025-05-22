@@ -6,6 +6,7 @@ import com.guildwars.commands.GuildsCommand;
 import com.guildwars.commands.HelpCommand;
 import com.guildwars.commands.SupportCommand;
 import com.guildwars.database.GuildService;
+import com.guildwars.enchantments.CustomEnchantmentManager;
 import com.guildwars.listeners.ChatListener;
 import com.guildwars.listeners.TreeFellerListener;
 import com.guildwars.storage.YamlStorageService;
@@ -24,6 +25,7 @@ public class GuildWars extends JavaPlugin {
     private YamlStorageService storageService;
     private GuildService guildService;
     private PlaceholderManager placeholderManager;
+    private CustomEnchantmentManager enchantmentManager;
 
     @Override
     public void onEnable() {
@@ -45,6 +47,9 @@ public class GuildWars extends JavaPlugin {
         // Initialize placeholder manager
         initializePlaceholderManager();
         
+        // Initialize custom enchantments
+        initializeEnchantments();
+        
         // Register commands
         registerCommands();
         
@@ -60,6 +65,8 @@ public class GuildWars extends JavaPlugin {
     public void onDisable() {
         // Save data when plugin is disabled
         saveData();
+        
+        // No need to unregister custom enchantments with the new implementation
         
         getLogger().info("GuildWars plugin has been disabled!");
         // Broadcast before closing MessageUtil
@@ -209,5 +216,22 @@ public class GuildWars extends JavaPlugin {
      */
     public PlaceholderManager getPlaceholderManager() {
         return placeholderManager;
+    }
+    
+    /**
+     * Initialize the custom enchantments.
+     */
+    private void initializeEnchantments() {
+        enchantmentManager = new CustomEnchantmentManager(this);
+        getLogger().info("Custom enchantments initialized.");
+    }
+    
+    /**
+     * Get the enchantment manager.
+     * 
+     * @return The enchantment manager
+     */
+    public CustomEnchantmentManager getEnchantmentManager() {
+        return enchantmentManager;
     }
 }

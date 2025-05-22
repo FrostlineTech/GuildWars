@@ -56,7 +56,7 @@ public class TreeFellerListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         // Check if TreeFeller is enabled in config
-        if (!plugin.getConfig().getBoolean("treefeller", false)) {
+        if (!plugin.getConfig().getBoolean("general.treefeller", false)) {
             return;
         }
         
