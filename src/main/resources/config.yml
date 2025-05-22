@@ -5,6 +5,10 @@ general:
   # The term used to refer to guilds (e.g., 'guild', 'faction', 'clan', 'club')
   # This affects display messages but not commands
   group-term: 'guild'
+  
+  # Whether the TreeFeller feature is enabled
+  # When enabled, breaking the bottom log of a tree will fell the entire tree
+  treefeller: true
 
 # Command aliases
 commands:

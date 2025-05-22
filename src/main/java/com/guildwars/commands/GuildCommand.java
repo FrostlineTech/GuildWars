@@ -679,6 +679,12 @@ public class GuildCommand implements CommandExecutor, TabCompleter {
             return;
         }
         
+        // Check if target player is the leader (trying to promote themselves)
+        if (targetPlayerId.equals(player.getUniqueId())) {
+            player.sendMessage(ChatColor.RED + "You must transfer " + guild.getName() + " to another user to change from leader.");
+            return;
+        }
+        
         // Check if target player is already an officer
         if (guild.isOfficer(targetPlayerId)) {
             player.sendMessage(ChatColor.RED + targetPlayerDisplayName + " is already an officer.");

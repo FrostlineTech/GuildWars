@@ -7,6 +7,7 @@ import com.guildwars.commands.HelpCommand;
 import com.guildwars.commands.SupportCommand;
 import com.guildwars.database.GuildService;
 import com.guildwars.listeners.ChatListener;
+import com.guildwars.listeners.TreeFellerListener;
 import com.guildwars.storage.YamlStorageService;
 import com.guildwars.util.MessageUtil;
 import com.guildwars.util.PlaceholderManager;
@@ -120,6 +121,10 @@ public class GuildWars extends JavaPlugin {
         // Register chat listener for guild chat tags
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
         getLogger().info("Chat listener registered for guild chat tags.");
+        
+        // Register TreeFeller listener
+        getServer().getPluginManager().registerEvents(new TreeFellerListener(this), this);
+        getLogger().info("TreeFeller listener registered.");
     }
     
 
