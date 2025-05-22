@@ -9,6 +9,20 @@ general:
   # Whether the TreeFeller feature is enabled
   # When enabled, breaking the bottom log of a tree will fell the entire tree
   treefeller: true
+  
+  # Custom enchantments settings
+  custom-enchantments:
+    # Chance to get custom enchantments from enchantment tables (1 in X chance)
+    enchantment-table-chance: 1000
+    
+    # Chance to get custom enchantments from loot chests (1 in X chance)
+    loot-chest-chance: 200
+    
+    # Whether custom enchantments can be found in the following locations
+    locations:
+      overworld-structures: true   # Desert temples, jungle temples, etc.
+      end-cities: true             # End city chests
+      nether-fortresses: true      # Nether fortress chests
 
 # Command aliases
 commands:

@@ -1,6 +1,7 @@
 package com.guildwars;
 
 import com.guildwars.commands.AdminCommand;
+import com.guildwars.commands.EnchantmentListCommand;
 import com.guildwars.commands.GuildCommand;
 import com.guildwars.commands.GuildsCommand;
 import com.guildwars.commands.HelpCommand;
@@ -9,9 +10,12 @@ import com.guildwars.database.GuildService;
 import com.guildwars.enchantments.CustomEnchantmentManager;
 import com.guildwars.listeners.ChatListener;
 import com.guildwars.listeners.TreeFellerListener;
+import com.guildwars.listeners.VisualEffectListener;
+import com.guildwars.mobs.CustomMobManager;
 import com.guildwars.storage.YamlStorageService;
 import com.guildwars.util.MessageUtil;
 import com.guildwars.util.PlaceholderManager;
+import com.guildwars.utils.VisualEffectManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,6 +30,8 @@ public class GuildWars extends JavaPlugin {
     private GuildService guildService;
     private PlaceholderManager placeholderManager;
     private CustomEnchantmentManager enchantmentManager;
+    private CustomMobManager mobManager;
+    private VisualEffectManager visualEffectManager;
 
     @Override
     public void onEnable() {
@@ -50,6 +56,12 @@ public class GuildWars extends JavaPlugin {
         // Initialize custom enchantments
         initializeEnchantments();
         
+        // Initialize custom mobs
+        initializeCustomMobs();
+        
+        // Initialize visual effects
+        initializeVisualEffects();
+        
         // Register commands
         registerCommands();
         
@@ -67,6 +79,12 @@ public class GuildWars extends JavaPlugin {
         saveData();
         
         // No need to unregister custom enchantments with the new implementation
+        
+        // Clean up visual effects
+        if (visualEffectManager != null) {
+            visualEffectManager.cleanup();
+            getLogger().info("Visual effects cleaned up.");
+        }
         
         getLogger().info("GuildWars plugin has been disabled!");
         // Broadcast before closing MessageUtil
@@ -117,7 +135,15 @@ public class GuildWars extends JavaPlugin {
         // Register admin command
         PluginCommand adminCommand = getCommand("guildadmin");
         if (adminCommand != null) {
-            adminCommand.setExecutor(new AdminCommand(this));
+            adminCommand.setExecutor(new AdminCommand(this, enchantmentManager, mobManager));
+        }
+        
+        // Register enchantments command
+        PluginCommand enchantmentsCommand = getCommand("enchantments");
+        if (enchantmentsCommand != null) {
+            // This registers both the executor and tab completer in the constructor
+            new EnchantmentListCommand(this);
+            getLogger().info("Enchantments command registered.");
         }
     }
     
@@ -132,6 +158,12 @@ public class GuildWars extends JavaPlugin {
         // Register TreeFeller listener
         getServer().getPluginManager().registerEvents(new TreeFellerListener(this), this);
         getLogger().info("TreeFeller listener registered.");
+        
+        // Register Visual Effect listener
+        if (visualEffectManager != null) {
+            new VisualEffectListener(this, visualEffectManager);
+            getLogger().info("Visual Effects listener registered.");
+        }
     }
     
 
@@ -233,5 +265,39 @@ public class GuildWars extends JavaPlugin {
      */
     public CustomEnchantmentManager getEnchantmentManager() {
         return enchantmentManager;
+    }
+    
+    /**
+     * Initialize the custom mobs system.
+     */
+    private void initializeCustomMobs() {
+        mobManager = new CustomMobManager(this);
+        getLogger().info("Custom mobs system initialized.");
+    }
+    
+    /**
+     * Get the custom mob manager.
+     * 
+     * @return The custom mob manager
+     */
+    public CustomMobManager getMobManager() {
+        return mobManager;
+    }
+    
+    /**
+     * Initialize the visual effects system.
+     */
+    private void initializeVisualEffects() {
+        visualEffectManager = new VisualEffectManager(this);
+        getLogger().info("Visual effects system initialized.");
+    }
+    
+    /**
+     * Get the visual effect manager.
+     * 
+     * @return The visual effect manager
+     */
+    public VisualEffectManager getVisualEffectManager() {
+        return visualEffectManager;
     }
 }

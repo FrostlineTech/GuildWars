@@ -1,0 +1,357 @@
+package com.guildwars.mobs;
+
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.IronGolem;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.Random;
+
+/**
+ * A Corrupted Warden custom mob.
+ * This mob is a powerful, corrupted Iron Golem that has an EMP pulse that blinds players,
+ * can teleport when at low health, and summons helper mobs when damaged.
+ */
+public class CorruptedWarden implements Listener {
+    
+    private final JavaPlugin plugin;
+    private final Random random = new Random();
+    
+    /**
+     * Creates a new CorruptedWarden instance.
+     *
+     * @param plugin The plugin instance
+     */
+    public CorruptedWarden(JavaPlugin plugin) {
+        this.plugin = plugin;
+        
+        // Register events
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+    
+    /**
+     * Spawns a Corrupted Warden at the specified location.
+     *
+     * @param location The location to spawn the mob
+     * @return The spawned entity
+     */
+    public LivingEntity spawn(Location location) {
+        // Create an Iron Golem as the base entity
+        IronGolem entity = (IronGolem) location.getWorld().spawnEntity(location, EntityType.IRON_GOLEM);
+        
+        // Set custom name
+        entity.setCustomName(ChatColor.DARK_RED + "Corrupted Warden");
+        entity.setCustomNameVisible(true);
+        
+        // Set attributes
+        entity.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(300.0);
+        entity.setHealth(300.0);
+        entity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(25.0);
+        entity.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.35);
+        entity.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
+        
+        // Add visual effects to show corruption
+        entity.getWorld().spawnParticle(
+            Particle.FLAME, 
+            entity.getLocation().add(0, 1, 0), 
+            50, 1, 2, 1, 0.02
+        );
+        entity.getWorld().playSound(
+            entity.getLocation(), 
+            Sound.ENTITY_IRON_GOLEM_HURT, 
+            1.0f, 0.5f
+        );
+        
+        // Store custom data to identify this as a corrupted warden
+        entity.getPersistentDataContainer().set(
+            new org.bukkit.NamespacedKey(plugin, "corrupted_warden"),
+            PersistentDataType.BYTE,
+            (byte) 1
+        );
+        
+        // Schedule periodic EMP pulse
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (entity == null || entity.isDead()) {
+                    this.cancel();
+                    return;
+                }
+                
+                // 25% chance to trigger an EMP pulse
+                if (random.nextDouble() < 0.25) {
+                    performEmpPulse(entity);
+                }
+            }
+        }.runTaskTimer(plugin, 200L, 200L); // Every 10 seconds with initial delay
+        
+        return entity;
+    }
+    
+    /**
+     * Performs an EMP pulse that blinds nearby players.
+     * 
+     * @param entity The Corrupted Warden entity
+     */
+    private void performEmpPulse(IronGolem entity) {
+        // Visual and sound effects
+        entity.getWorld().spawnParticle(
+            Particle.EXPLOSION_LARGE, 
+            entity.getLocation().add(0, 1, 0), 
+            1, 0, 0, 0, 0
+        );
+        entity.getWorld().playSound(
+            entity.getLocation(), 
+            Sound.ENTITY_GENERIC_EXPLODE, 
+            1.5f, 0.8f
+        );
+        
+        // Affect players in a 15 block radius
+        for (Entity nearby : entity.getNearbyEntities(15, 15, 15)) {
+            if (nearby instanceof Player) {
+                Player player = (Player) nearby;
+                
+                // Apply blindness and slowness effects
+                player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 100, 0));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 200, 1));
+                
+                // Notify the player
+                player.sendMessage(ChatColor.DARK_RED + "The Corrupted Warden emits a blinding pulse!");
+                
+                // Play sound at player's location
+                player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 1.0f);
+            }
+        }
+        
+        // Dramatic visual effects
+        entity.getWorld().spawnParticle(
+            Particle.ELECTRIC_SPARK, 
+            entity.getLocation(), 
+            100, 8, 8, 8, 0.1
+        );
+    }
+    
+    /**
+     * Handles the Corrupted Warden being damaged.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof IronGolem)) {
+            return;
+        }
+        
+        IronGolem warden = (IronGolem) event.getEntity();
+        
+        if (!isCorruptedWarden(warden)) {
+            return;
+        }
+        
+        // Check if health is low (below 30%)
+        if (warden.getHealth() - event.getFinalDamage() < warden.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() * 0.3) {
+            // 40% chance to teleport when health is low
+            if (random.nextDouble() < 0.4) {
+                teleportAwayFromDamage(warden);
+                
+                // Cancel the damage
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // 20% chance to summon helper mobs when damaged
+        if (random.nextDouble() < 0.2) {
+            summonHelperMobs(warden);
+        }
+    }
+    
+    /**
+     * Teleports the Corrupted Warden away from damage.
+     * 
+     * @param warden The Corrupted Warden entity
+     */
+    private void teleportAwayFromDamage(IronGolem warden) {
+        // Find a safe location 10-20 blocks away
+        Location currentLoc = warden.getLocation();
+        Location newLoc = currentLoc.clone();
+        
+        // Try to find a safe location by checking in random directions
+        for (int i = 0; i < 10; i++) { // Try up to 10 times
+            double distance = 10 + random.nextDouble() * 10; // 10-20 blocks
+            double angle = random.nextDouble() * Math.PI * 2; // Random angle
+            
+            double x = Math.cos(angle) * distance;
+            double z = Math.sin(angle) * distance;
+            
+            newLoc = currentLoc.clone().add(x, 0, z);
+            
+            // Find a safe Y position
+            newLoc.setY(currentLoc.getY());
+            for (int y = -5; y <= 5; y++) {
+                Location checkLoc = newLoc.clone().add(0, y, 0);
+                if (!checkLoc.getBlock().getType().isSolid() && 
+                    !checkLoc.clone().add(0, 1, 0).getBlock().getType().isSolid() && 
+                    checkLoc.clone().subtract(0, 1, 0).getBlock().getType().isSolid()) {
+                    newLoc = checkLoc;
+                    break;
+                }
+            }
+            
+            // If we found a good location, break out
+            if (!newLoc.getBlock().getType().isSolid() && 
+                !newLoc.clone().add(0, 1, 0).getBlock().getType().isSolid() && 
+                newLoc.clone().subtract(0, 1, 0).getBlock().getType().isSolid()) {
+                break;
+            }
+        }
+        
+        // Create teleport effects
+        warden.getWorld().spawnParticle(
+            Particle.PORTAL, 
+            warden.getLocation(), 
+            50, 0.5, 1, 0.5, 0.5
+        );
+        warden.getWorld().playSound(
+            warden.getLocation(), 
+            Sound.ENTITY_ENDERMAN_TELEPORT, 
+            1.0f, 0.5f
+        );
+        
+        // Teleport
+        warden.teleport(newLoc);
+        
+        // Heal a bit after teleporting
+        double maxHealth = warden.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+        warden.setHealth(Math.min(warden.getHealth() + (maxHealth * 0.1), maxHealth));
+        
+        // Arrival effects
+        warden.getWorld().spawnParticle(
+            Particle.PORTAL, 
+            newLoc, 
+            50, 0.5, 1, 0.5, 0.5
+        );
+        warden.getWorld().playSound(
+            newLoc, 
+            Sound.ENTITY_ENDERMAN_TELEPORT, 
+            1.0f, 0.5f
+        );
+        
+        // Notify nearby players
+        for (Entity nearby : warden.getNearbyEntities(30, 30, 30)) {
+            if (nearby instanceof Player) {
+                Player player = (Player) nearby;
+                player.sendMessage(ChatColor.DARK_RED + "The Corrupted Warden teleports away!");
+            }
+        }
+    }
+    
+    /**
+     * Summons helper mobs around the Corrupted Warden.
+     * 
+     * @param warden The Corrupted Warden entity
+     */
+    private void summonHelperMobs(IronGolem warden) {
+        // Number of mobs to summon (2-3)
+        int count = 2 + random.nextInt(2);
+        
+        // Summon effect
+        warden.getWorld().spawnParticle(
+            Particle.SOUL, 
+            warden.getLocation(), 
+            50, 3, 0.5, 3, 0.1
+        );
+        warden.getWorld().playSound(
+            warden.getLocation(), 
+            Sound.ENTITY_WITHER_SPAWN, 
+            1.0f, 1.5f
+        );
+        
+        // Summon zombies with enhanced abilities
+        for (int i = 0; i < count; i++) {
+            // Calculate spawn position (random within 3 blocks)
+            Location spawnLoc = warden.getLocation().clone().add(
+                random.nextDouble() * 6 - 3,
+                0,
+                random.nextDouble() * 6 - 3
+            );
+            
+            // Summon a zombie
+            Zombie zombie = (Zombie) warden.getWorld().spawnEntity(spawnLoc, EntityType.ZOMBIE);
+            
+            // Enhance the zombie
+            zombie.setCustomName(ChatColor.RED + "Warden's Minion");
+            zombie.setCustomNameVisible(true);
+            
+            zombie.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(40.0);
+            zombie.setHealth(40.0);
+            zombie.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0);
+            zombie.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
+            
+            // Add glow effect and prevent burning in daylight
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
+            
+            // Spawn effect
+            zombie.getWorld().spawnParticle(
+                Particle.SOUL, 
+                zombie.getLocation(), 
+                20, 0.5, 1, 0.5, 0.1
+            );
+            
+            // Schedule for despawn after 30 seconds
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!zombie.isDead()) {
+                        zombie.getWorld().spawnParticle(
+                            Particle.SOUL, 
+                            zombie.getLocation(), 
+                            20, 0.5, 1, 0.5, 0.1
+                        );
+                        zombie.remove();
+                    }
+                }
+            }.runTaskLater(plugin, 30 * 20L);
+        }
+        
+        // Notify nearby players
+        for (Entity nearby : warden.getNearbyEntities(20, 20, 20)) {
+            if (nearby instanceof Player) {
+                Player player = (Player) nearby;
+                player.sendMessage(ChatColor.DARK_RED + "The Corrupted Warden summons minions to its aid!");
+            }
+        }
+    }
+    
+    /**
+     * Checks if an entity is a Corrupted Warden.
+     *
+     * @param entity The entity to check
+     * @return True if the entity is a Corrupted Warden
+     */
+    public static boolean isCorruptedWarden(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        
+        return entity.getPersistentDataContainer().has(
+            new org.bukkit.NamespacedKey(JavaPlugin.getProvidingPlugin(CorruptedWarden.class), "corrupted_warden"),
+            PersistentDataType.BYTE
+        );
+    }
+}
