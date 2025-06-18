@@ -23,6 +23,85 @@ general:
       overworld-structures: true   # Desert temples, jungle temples, etc.
       end-cities: true             # End city chests
       nether-fortresses: true      # Nether fortress chests
+      
+  # Visual effects settings
+  visual-effects:
+    # Health bar settings
+    health-bars:
+      # Whether to show health bars above mobs
+      enabled: true
+      
+      # Maximum distance (in blocks) from which health bars are visible
+      max-distance: 24
+      
+      # Whether health bars can be seen through walls
+      visible-through-walls: false
+      
+      # Duration in seconds before removing a health bar if entity is not updated
+      cleanup-time: 60
+  
+  # Custom mob settings
+  custom-mobs:
+    # Whether natural spawning of custom mobs is enabled
+    natural-spawning: true
+    
+    # Corrupted Warden settings
+    corrupted-warden:
+      # Chance to replace natural mob spawns in plains biomes (0.0-1.0)
+      spawn-rate: 0.15
+      
+      # Maximum number of Corrupted Wardens allowed in the world at once
+      max-spawned: 5
+      
+      # Whether Corrupted Wardens should target players
+      target-players: true
+    
+    # Frost Giant settings
+    frost-giant:
+      # Chance to replace natural mob spawns in cold biomes (0.0-1.0)
+      spawn-rate: 0.10
+      
+      # Maximum number of Frost Giants allowed in the world at once
+      max-spawned: 3
+      
+      # Whether Frost Giants should target players
+      target-players: true
+      
+  # Performance optimization settings
+  performance:
+    # Mob merging (stacking) settings
+    mob-merging:
+      # Whether to enable mob merging in chunks to reduce lag
+      enabled: true
+      
+      # Maximum number of similar mobs that can be merged into one stack
+      max-stack-size: 10
+      
+      # Types of mobs to exclude from merging (e.g., VILLAGER, IRON_GOLEM)
+      excluded-types:
+        - VILLAGER
+        - WANDERING_TRADER
+        - IRON_GOLEM
+        - ENDER_DRAGON
+        - WITHER
+    
+    # Clear lag settings
+    clear-lag:
+      # Whether to enable periodic clearing of ground items
+      enabled: true
+      
+      # Time in minutes between clearing ground items
+      interval: 5
+      
+      # Warning time in seconds before items are cleared
+      warning-time: 60
+      
+      # Types of entities to exclude from clearing
+      excluded-types:
+        - ARMOR_STAND
+        - ITEM_FRAME
+        - GLOW_ITEM_FRAME
+        - PAINTING
 
 # Command aliases
 commands:
@@ -162,6 +241,14 @@ permissions:
   guildwars.admin: false      # Gives access to all GuildWars commands
   guildwars.admin.delete: false # Allows deleting guilds as an administrator
   guildwars.admin.reload: false # Allows reloading the plugin configuration
+  guildwars.admin.enchant: false # Allows applying custom enchantments
+  guildwars.admin.give: false   # Allows giving special items
+  guildwars.admin.summon: false # Allows summoning custom mobs
+  guildwars.admin.godmode: false # Allows toggling godmode
+  guildwars.admin.healthbar: false # Allows toggling health bars
+  guildwars.admin.mobmerge: false # Allows controlling mob merging
+  guildwars.admin.clearlag: false # Allows controlling clear lag
+  guildwars.admin.mobspawn: false # Allows controlling custom mob spawning
 
 # Messages
 messages:

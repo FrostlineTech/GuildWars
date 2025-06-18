@@ -21,6 +21,7 @@ public abstract class CustomEnchantment extends Enchantment {
     private final String name;
     private final int maxLevel;
     private final EnchantmentTarget target;
+    private final NamespacedKey key;
     
     /**
      * Creates a new custom enchantment.
@@ -31,10 +32,12 @@ public abstract class CustomEnchantment extends Enchantment {
      * @param target The target items for this enchantment
      */
     public CustomEnchantment(NamespacedKey key, String name, int maxLevel, EnchantmentTarget target) {
-        super(key);
+        // Note: In newer versions of Spigot/Paper, Enchantment is now abstract with no constructor
+        // The key is handled by implementing getKey() method
         this.name = name;
         this.maxLevel = maxLevel;
         this.target = target;
+        this.key = key;
     }
     
     /**
@@ -116,7 +119,10 @@ public abstract class CustomEnchantment extends Enchantment {
         return item;
     }
     
+    // getName() is deprecated in newer Bukkit versions
+    // Use getKey() and translationKey() instead
     @Override
+    @Deprecated
     public String getName() {
         return name;
     }
@@ -184,5 +190,20 @@ public abstract class CustomEnchantment extends Enchantment {
     @Override
     public EnchantmentRarity getRarity() {
         return EnchantmentRarity.RARE;
+    }
+    
+    @Override
+    public NamespacedKey getKey() {
+        return key;
+    }
+    
+    @Override
+    public int getMinModifiedCost(int level) {
+        return level * 10;
+    }
+    
+    @Override
+    public int getMaxModifiedCost(int level) {
+        return getMinModifiedCost(level) + 15;
     }
 }

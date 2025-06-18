@@ -47,6 +47,9 @@ public class FrostGiant {
         // Create an Iron Golem as the base entity
         IronGolem entity = (IronGolem) location.getWorld().spawnEntity(location, EntityType.IRON_GOLEM);
         
+        // Set entity to target players only
+        entity.setPlayerCreated(false); // Ensure it's not treated as a player-created golem
+        
         // Set custom name
         entity.setCustomName(ChatColor.AQUA + "Frost Giant");
         entity.setCustomNameVisible(true);
@@ -57,6 +60,23 @@ public class FrostGiant {
         entity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(15.0);
         entity.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.25);
         entity.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(0.8);
+        entity.getAttribute(Attribute.GENERIC_FOLLOW_RANGE).setBaseValue(35.0); // Increase detection range
+        
+        // Force target nearest player when spawned
+        Player nearestPlayer = null;
+        double nearestDistance = Double.MAX_VALUE;
+        
+        for (Player player : entity.getWorld().getPlayers()) {
+            double distance = player.getLocation().distanceSquared(entity.getLocation());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+        
+        if (nearestPlayer != null && nearestDistance < 1225) { // 35 blocks squared
+            entity.setTarget(nearestPlayer);
+        }
         
         // Add visual effects to make it look frozen
         entity.getWorld().spawnParticle(Particle.SNOWFLAKE, entity.getLocation().add(0, 1, 0), 
@@ -143,9 +163,9 @@ public class FrostGiant {
                 if (x*x + z*z <= radius_int*radius_int) {
                     Location blockLoc = entity.getLocation().add(x, 0, z);
                     
-                    // Only replace air or grass
+                    // Only replace air or grass - GRASS was renamed to GRASS_BLOCK in newer versions
                     Material blockType = blockLoc.getBlock().getType();
-                    if (blockType == Material.AIR || blockType == Material.GRASS || 
+                    if (blockType == Material.AIR || blockType == Material.GRASS_BLOCK || 
                         blockType == Material.DIRT) {
                         continue; // Skip for now - replacing blocks can cause lag and conflicts
                     }

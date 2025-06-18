@@ -71,9 +71,26 @@ public class EnchantmentManager implements Listener {
             harvesterEnchantment = new HarvesterEnchantment(harvesterKey);
             tunnelingEnchantment = new TunnelingEnchantment(tunnelingKey);
             
-            // Register enchantments
-            Enchantment.registerEnchantment(harvesterEnchantment);
-            Enchantment.registerEnchantment(tunnelingEnchantment);
+            // Register enchantments - modern API no longer uses registerEnchantment
+            // Instead we need to use the Registry
+            try {
+                // Use reflection to access and register to the enchantment registry
+                java.lang.reflect.Field f = org.bukkit.Registry.class.getDeclaredField("ENCHANTMENT");
+                f.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                org.bukkit.Registry<org.bukkit.enchantments.Enchantment> registry = 
+                    (org.bukkit.Registry<org.bukkit.enchantments.Enchantment>) f.get(null);
+                
+                java.lang.reflect.Method registerMethod = registry.getClass().getDeclaredMethod("register", 
+                    org.bukkit.NamespacedKey.class, Object.class);
+                registerMethod.setAccessible(true);
+                
+                registerMethod.invoke(registry, harvesterEnchantment.getKey(), harvesterEnchantment);
+                registerMethod.invoke(registry, tunnelingEnchantment.getKey(), tunnelingEnchantment);
+            } catch (Exception ex) {
+                plugin.getLogger().severe("Failed to register enchantments via Registry: " + ex.getMessage());
+                ex.printStackTrace();
+            }
             
             plugin.getLogger().info("Custom enchantments registered successfully!");
         } catch (Exception e) {

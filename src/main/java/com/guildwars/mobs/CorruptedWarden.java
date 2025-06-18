@@ -55,6 +55,9 @@ public class CorruptedWarden implements Listener {
         // Create an Iron Golem as the base entity
         IronGolem entity = (IronGolem) location.getWorld().spawnEntity(location, EntityType.IRON_GOLEM);
         
+        // Set entity to target players only using Bukkit NMS to override targeting goals
+        entity.setPlayerCreated(false); // Ensure it's not treated as a player-created golem
+        
         // Set custom name
         entity.setCustomName(ChatColor.DARK_RED + "Corrupted Warden");
         entity.setCustomNameVisible(true);
@@ -65,6 +68,23 @@ public class CorruptedWarden implements Listener {
         entity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(25.0);
         entity.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.35);
         entity.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
+        entity.getAttribute(Attribute.GENERIC_FOLLOW_RANGE).setBaseValue(40.0); // Increase detection range
+        
+        // Force target nearest player when spawned
+        Player nearestPlayer = null;
+        double nearestDistance = Double.MAX_VALUE;
+        
+        for (Player player : entity.getWorld().getPlayers()) {
+            double distance = player.getLocation().distanceSquared(entity.getLocation());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+        
+        if (nearestPlayer != null && nearestDistance < 1600) { // 40 blocks squared
+            entity.setTarget(nearestPlayer);
+        }
         
         // Add visual effects to show corruption
         entity.getWorld().spawnParticle(

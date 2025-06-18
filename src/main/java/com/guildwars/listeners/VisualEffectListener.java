@@ -65,8 +65,10 @@ public class VisualEffectListener implements Listener {
         // Show the damage number
         visualEffectManager.showDamageIndicator(entity, damage, isCritical);
         
-        // Update health bar after damage
-        visualEffectManager.updateHealthBar(entity);
+        // Update health bar after damage if enabled
+        if (visualEffectManager.areHealthBarsEnabled()) {
+            visualEffectManager.updateHealthBar(entity);
+        }
     }
     
     /**
@@ -80,8 +82,8 @@ public class VisualEffectListener implements Listener {
         
         LivingEntity entity = (LivingEntity) event.getEntity();
         
-        // Only show health bars for monsters and custom mobs, not players or passive mobs
-        if (isMonsterOrCustomMob(entity)) {
+        // Only show health bars for monsters and custom mobs if enabled
+        if (visualEffectManager.areHealthBarsEnabled() && isMonsterOrCustomMob(entity)) {
             // Delay the health bar a bit to ensure entity is fully spawned
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 visualEffectManager.updateHealthBar(entity);
@@ -100,8 +102,8 @@ public class VisualEffectListener implements Listener {
         
         LivingEntity entity = (LivingEntity) event.getEntity();
         
-        // Only update health bars for monsters and custom mobs
-        if (isMonsterOrCustomMob(entity)) {
+        // Only update health bars for monsters and custom mobs if enabled
+        if (visualEffectManager.areHealthBarsEnabled() && isMonsterOrCustomMob(entity)) {
             visualEffectManager.updateHealthBar(entity);
         }
     }
@@ -123,40 +125,38 @@ public class VisualEffectListener implements Listener {
             return true;
         }
         
-        // Check entity type for monsters
-        switch (entity.getType()) {
-            case ZOMBIE:
-            case SKELETON:
-            case CREEPER:
-            case SPIDER:
-            case ENDERMAN:
-            case WITCH:
-            case BLAZE:
-            case GHAST:
-            case SLIME:
-            case MAGMA_CUBE:
-            case WITHER_SKELETON:
-            case GUARDIAN:
-            case ELDER_GUARDIAN:
-            case SHULKER:
-            case EVOKER:
-            case VEX:
-            case VINDICATOR:
-            case ILLUSIONER:
-            case PHANTOM:
-            case DROWNED:
-            case PILLAGER:
-            case RAVAGER:
-            case HOGLIN:
-            case PIGLIN:
-            case PIGLIN_BRUTE:
-            case ZOGLIN:
-            // WARDEN might not be available in all Minecraft versions
-            // Uncomment if using Minecraft 1.19+
-            // case WARDEN:
-                return true;
-            default:
-                return false;
-        }
+        // Use the string name of the entity type to avoid compatibility issues
+        String entityType = entity.getType().name();
+        
+        // Common hostile mobs
+        return entityType.equals("ZOMBIE") ||
+               entityType.equals("SKELETON") ||
+               entityType.equals("CREEPER") ||
+               entityType.equals("SPIDER") ||
+               entityType.equals("ENDERMAN") ||
+               entityType.equals("WITCH") ||
+               entityType.equals("BLAZE") ||
+               entityType.equals("GHAST") ||
+               entityType.equals("SLIME") ||
+               entityType.equals("MAGMA_CUBE") ||
+               entityType.equals("WITHER_SKELETON") ||
+               entityType.equals("GUARDIAN") ||
+               entityType.equals("ELDER_GUARDIAN") ||
+               entityType.equals("SHULKER") ||
+               entityType.equals("EVOKER") ||
+               entityType.equals("VEX") ||
+               entityType.equals("VINDICATOR") ||
+               entityType.equals("ILLUSIONER") ||
+               entityType.equals("PHANTOM") ||
+               entityType.equals("DROWNED") ||
+               entityType.equals("PILLAGER") ||
+               entityType.equals("RAVAGER") ||
+               entityType.equals("HOGLIN") ||
+               entityType.equals("PIGLIN") ||
+               entityType.equals("PIGLIN_BRUTE") ||
+               entityType.equals("ZOGLIN") ||
+               entityType.equals("WITHER") ||
+               // Added for Minecraft 1.21.6
+               entityType.equals("WARDEN");
     }
 }

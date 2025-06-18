@@ -15,13 +15,16 @@ import com.guildwars.mobs.CustomMobManager;
 import com.guildwars.storage.YamlStorageService;
 import com.guildwars.util.MessageUtil;
 import com.guildwars.util.PlaceholderManager;
+import com.guildwars.utils.ClearLagManager;
+import com.guildwars.utils.MobMergeManager;
+import com.guildwars.mobs.CustomMobSpawnManager;
 import com.guildwars.utils.VisualEffectManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Main class for the GuildWars plugin.
- * Version: 1.1-SNAPSHOT
+ * Version: 1.5.0 for Minecraft 1.21.6
  */
 public class GuildWars extends JavaPlugin {
 
@@ -31,7 +34,10 @@ public class GuildWars extends JavaPlugin {
     private PlaceholderManager placeholderManager;
     private CustomEnchantmentManager enchantmentManager;
     private CustomMobManager mobManager;
+    private CustomMobSpawnManager mobSpawnManager;
     private VisualEffectManager visualEffectManager;
+    private MobMergeManager mobMergeManager;
+    private ClearLagManager clearLagManager;
 
     @Override
     public void onEnable() {
@@ -62,6 +68,9 @@ public class GuildWars extends JavaPlugin {
         // Initialize visual effects
         initializeVisualEffects();
         
+        // Initialize performance features
+        initializePerformanceFeatures();
+        
         // Register commands
         registerCommands();
         
@@ -84,6 +93,16 @@ public class GuildWars extends JavaPlugin {
         if (visualEffectManager != null) {
             visualEffectManager.cleanup();
             getLogger().info("Visual effects cleaned up.");
+        }
+        
+        // Clean up performance managers
+        if (mobMergeManager != null) {
+            getLogger().info("Mob merge manager stopped.");
+        }
+        
+        if (clearLagManager != null) {
+            clearLagManager.cleanup();
+            getLogger().info("Clear lag manager stopped.");
         }
         
         getLogger().info("GuildWars plugin has been disabled!");
@@ -164,6 +183,8 @@ public class GuildWars extends JavaPlugin {
             new VisualEffectListener(this, visualEffectManager);
             getLogger().info("Visual Effects listener registered.");
         }
+        
+        // Note: MobMergeManager registers its own event listeners if enabled
     }
     
 
@@ -271,7 +292,11 @@ public class GuildWars extends JavaPlugin {
      * Initialize the custom mobs system.
      */
     private void initializeCustomMobs() {
+        // Initialize custom mob manager
         mobManager = new CustomMobManager(this);
+        
+        // Initialize custom mob spawn manager for biome-specific spawns
+        mobSpawnManager = new CustomMobSpawnManager(this, mobManager);
         getLogger().info("Custom mobs system initialized.");
     }
     
@@ -285,11 +310,33 @@ public class GuildWars extends JavaPlugin {
     }
     
     /**
+     * Get the custom mob spawn manager.
+     * 
+     * @return The custom mob spawn manager
+     */
+    public CustomMobSpawnManager getCustomMobSpawnManager() {
+        return mobSpawnManager;
+    }
+    
+    /**
      * Initialize the visual effects system.
      */
     private void initializeVisualEffects() {
         visualEffectManager = new VisualEffectManager(this);
         getLogger().info("Visual effects system initialized.");
+    }
+    
+    /**
+     * Initialize performance optimization features like mob merging and clear lag.
+     */
+    private void initializePerformanceFeatures() {
+        // Initialize mob merging
+        mobMergeManager = new MobMergeManager(this);
+        getLogger().info("Mob merging system initialized.");
+        
+        // Initialize clear lag system
+        clearLagManager = new ClearLagManager(this);
+        getLogger().info("Clear lag system initialized.");
     }
     
     /**
@@ -299,5 +346,23 @@ public class GuildWars extends JavaPlugin {
      */
     public VisualEffectManager getVisualEffectManager() {
         return visualEffectManager;
+    }
+    
+    /**
+     * Get the mob merge manager.
+     * 
+     * @return The mob merge manager
+     */
+    public MobMergeManager getMobMergeManager() {
+        return mobMergeManager;
+    }
+    
+    /**
+     * Get the clear lag manager.
+     * 
+     * @return The clear lag manager
+     */
+    public ClearLagManager getClearLagManager() {
+        return clearLagManager;
     }
 }

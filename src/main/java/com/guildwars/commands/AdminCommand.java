@@ -4,6 +4,10 @@ import com.guildwars.GuildWars;
 import com.guildwars.enchantments.CustomEnchantmentManager;
 import com.guildwars.enchantments.CustomEnchantmentType;
 import com.guildwars.mobs.CustomMobManager;
+import com.guildwars.utils.ClearLagManager;
+import com.guildwars.utils.MobMergeManager;
+import com.guildwars.utils.VisualEffectManager;
+import com.guildwars.mobs.CustomMobSpawnManager;
 import com.guildwars.model.Guild;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -38,16 +42,26 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
     private final GuildWars plugin;
     private final CustomEnchantmentManager enchantmentManager;
     private final CustomMobManager mobManager;
+    private final VisualEffectManager visualEffectManager;
+    private final MobMergeManager mobMergeManager;
+    private final ClearLagManager clearLagManager;
+    private final CustomMobSpawnManager customMobSpawnManager;
 
     /**
      * Creates a new admin command handler.
      *
      * @param plugin The GuildWars plugin instance
+     * @param enchantmentManager The custom enchantment manager
+     * @param mobManager The custom mob manager
      */
     public AdminCommand(GuildWars plugin, CustomEnchantmentManager enchantmentManager, CustomMobManager mobManager) {
         this.plugin = plugin;
         this.enchantmentManager = enchantmentManager;
         this.mobManager = mobManager;
+        this.visualEffectManager = plugin.getVisualEffectManager();
+        this.mobMergeManager = plugin.getMobMergeManager();
+        this.clearLagManager = plugin.getClearLagManager();
+        this.customMobSpawnManager = plugin.getCustomMobSpawnManager();
     }
 
     @Override
@@ -88,6 +102,18 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             case "godmode":
                 handleGodMode(sender);
                 break;
+            case "healthbar":
+                handleHealthBar(sender, subArgs);
+                break;
+            case "mobmerge":
+                handleMobMerge(sender, subArgs);
+                break;
+            case "clearlag":
+                handleClearLag(sender, args);
+                break;
+            case "mobspawn":
+                handleMobSpawn(sender, args);
+                break;
             default:
                 showHelp(sender);
                 break;
@@ -103,14 +129,17 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
      */
     private void showHelp(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "=== GuildWars Admin Commands ===");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin delete <guild> " + ChatColor.WHITE + "- Delete a guild");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin reload " + ChatColor.WHITE + "- Reload the plugin configuration");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin about " + ChatColor.WHITE + "- Display plugin information");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin enchant <type> [level] " + ChatColor.WHITE + "- Add a custom enchantment to the held item");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin summon <mobType> " + ChatColor.WHITE + "- Summon a custom mob at your location");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin give <book_type> [level] " + ChatColor.WHITE + "- Give yourself an enchanted book");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin godmode " + ChatColor.WHITE + "- Toggle godmode (full immunity and invisibility to mobs)");
-        sender.sendMessage(ChatColor.YELLOW + "/guildadmin summon <mob_type> " + ChatColor.WHITE + "- Summon a mob");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin delete <guild>" + ChatColor.WHITE + " - Delete a guild");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin reload" + ChatColor.WHITE + " - Reload the plugin config");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin about" + ChatColor.WHITE + " - Show plugin information");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin enchant <type> <level> [player]" + ChatColor.WHITE + " - Apply custom enchantment");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin give <item> [player] [amount]" + ChatColor.WHITE + " - Give special items");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin summon <mob> [location]" + ChatColor.WHITE + " - Summon custom mobs");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin godmode" + ChatColor.WHITE + " - Toggle godmode");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin healthbar <on/off>" + ChatColor.WHITE + " - Toggle health bars");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin mobmerge <on/off>" + ChatColor.WHITE + " - Toggle mob merging");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin clearlag <on/off/now>" + ChatColor.WHITE + " - Toggle clear lag or run now");
+        sender.sendMessage(ChatColor.YELLOW + "/guildadmin mobspawn <on/off/warden/frost> <value>" + ChatColor.WHITE + " - Control custom mob spawning");
     }
 
     /**
@@ -147,9 +176,9 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                         member.sendMessage(ChatColor.RED + "Your guild '" + guild.getName() + "' has been deleted by an administrator.");
                     }
                 }
-                
+
                 sender.sendMessage(ChatColor.GREEN + "Guild '" + guild.getName() + "' has been deleted.");
-                
+
                 // Log the action
                 plugin.getLogger().info("Admin " + sender.getName() + " deleted guild: " + guild.getName());
             } else {
@@ -171,10 +200,10 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         try {
             // Reload plugin configuration
             plugin.reloadConfig();
-            
+
             // Reload placeholders
             plugin.reloadPlaceholders();
-            
+
             sender.sendMessage(ChatColor.GREEN + "GuildWars configuration reloaded successfully.");
             plugin.getLogger().info("Admin " + sender.getName() + " reloaded the plugin configuration.");
         } catch (Exception e) {
@@ -195,24 +224,24 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "Version: " + ChatColor.WHITE + plugin.getDescription().getVersion());
         sender.sendMessage(ChatColor.YELLOW + "Author: " + ChatColor.WHITE + String.join(", ", plugin.getDescription().getAuthors()));
         sender.sendMessage(ChatColor.YELLOW + "Website: " + ChatColor.WHITE + plugin.getDescription().getWebsite());
-        
+
         // Server information
         sender.sendMessage(ChatColor.GOLD + "=== Server Information ===");
         sender.sendMessage(ChatColor.YELLOW + "Bukkit Version: " + ChatColor.WHITE + Bukkit.getBukkitVersion());
         sender.sendMessage(ChatColor.YELLOW + "Server Version: " + ChatColor.WHITE + Bukkit.getVersion());
         sender.sendMessage(ChatColor.YELLOW + "Online Players: " + ChatColor.WHITE + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers());
-        
+
         // Plugin statistics
         sender.sendMessage(ChatColor.GOLD + "=== Guild Statistics ===");
         int guildCount = plugin.getGuildService().getAllGuilds().size();
         sender.sendMessage(ChatColor.YELLOW + "Total Guilds: " + ChatColor.WHITE + guildCount);
-        
+
         // Memory usage
         Runtime runtime = Runtime.getRuntime();
         long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
         long totalMemory = runtime.totalMemory() / 1024 / 1024;
         long maxMemory = runtime.maxMemory() / 1024 / 1024;
-        
+
         sender.sendMessage(ChatColor.GOLD + "=== Memory Usage ===");
         sender.sendMessage(ChatColor.YELLOW + "Used Memory: " + ChatColor.WHITE + usedMemory + " MB");
         sender.sendMessage(ChatColor.YELLOW + "Allocated Memory: " + ChatColor.WHITE + totalMemory + " MB");
@@ -232,20 +261,20 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
             return;
         }
-        
+
         Player player = (Player) sender;
-        
+
         // Check arguments
         if (args.length < 1) {
             sender.sendMessage(ChatColor.RED + "Usage: /guildadmin enchant <type> [level]");
             sender.sendMessage(ChatColor.YELLOW + "Available enchantment types: HARVESTER, TUNNELING, SHOVEL_TUNNELING, AUTO_SMELT, HASTE, TREASURE_HUNTER");
             return;
         }
-        
+
         // Get the enchantment type
         String typeArg = args[0].toUpperCase();
         CustomEnchantmentType type;
-        
+
         try {
             type = CustomEnchantmentType.valueOf(typeArg);
         } catch (IllegalArgumentException e) {
@@ -253,7 +282,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.YELLOW + "Available enchantment types: HARVESTER, TUNNELING, SHOVEL_TUNNELING, AUTO_SMELT, HASTE, TREASURE_HUNTER");
             return;
         }
-        
+
         // Get the enchantment level
         int level = 1;
         if (args.length > 1) {
@@ -268,37 +297,37 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                 return;
             }
         }
-        
+
         // Check if the player is holding an item
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() == Material.AIR) {
             sender.sendMessage(ChatColor.RED + "You must be holding an item to enchant it.");
             return;
         }
-        
+
         // Check if the enchantment can be applied to this item
         if (!type.canEnchantItem(item)) {
             // Get item material type name in a readable format
             String itemType = item.getType().toString().toLowerCase().replace('_', ' ');
-            
+
             // Send a descriptive error message
-            sender.sendMessage(ChatColor.RED + "Incompatible item! " + 
-                              ChatColor.YELLOW + type.getFormattedName(1) + 
-                              ChatColor.RED + " cannot be applied to " + 
-                              ChatColor.YELLOW + itemType + ChatColor.RED + ".");
+            sender.sendMessage(ChatColor.RED + "Incompatible item! " +
+                    ChatColor.YELLOW + type.getFormattedName(1) +
+                    ChatColor.RED + " cannot be applied to " +
+                    ChatColor.YELLOW + itemType + ChatColor.RED + ".");
             return;
         }
-        
+
         // Add the enchantment to the item
         ItemStack enchantedItem = enchantmentManager.addEnchantment(item, type, level);
-        
+
         // Update the player's inventory
         player.getInventory().setItemInMainHand(enchantedItem);
-        
+
         // Send success message
         sender.sendMessage(ChatColor.GREEN + "Added " + type.getFormattedName(level) + ChatColor.GREEN + " to your item.");
     }
-    
+
     /**
      * Handles the give command for enchanted books.
      * Gives the player an enchanted book with the specified enchantment.
@@ -312,9 +341,9 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
             return;
         }
-        
+
         Player player = (Player) sender;
-        
+
         // Check arguments
         if (args.length < 1) {
             // Build a list of available enchantment types for the help message
@@ -324,22 +353,22 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             }
             // Remove the trailing comma and space
             String availableTypesStr = availableTypes.length() > 2 ?
-                availableTypes.substring(0, availableTypes.length() - 2) : "";
-                
+                    availableTypes.substring(0, availableTypes.length() - 2) : "";
+
             sender.sendMessage(ChatColor.RED + "Usage: /guildadmin give <book_type> [level]");
             sender.sendMessage(ChatColor.YELLOW + "Available book types: " + availableTypesStr);
             return;
         }
-        
+
         // Get the book type
         String bookArg = args[0].toUpperCase();
         CustomEnchantmentType enchantType = null;
-        
+
         // Normalize the book argument if it doesn't start with BOOK_OF_
         if (!bookArg.startsWith("BOOK_OF_")) {
             bookArg = "BOOK_OF_" + bookArg;
         }
-        
+
         // Map to convert book name to enchantment type
         try {
             // Remove the "BOOK_OF_" prefix and convert to enum
@@ -353,13 +382,13 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             }
             // Remove the trailing comma and space
             String availableTypesStr = availableTypes.length() > 2 ?
-                availableTypes.substring(0, availableTypes.length() - 2) : "";
-                
+                    availableTypes.substring(0, availableTypes.length() - 2) : "";
+
             sender.sendMessage(ChatColor.RED + "Invalid book type: " + args[0]);
             sender.sendMessage(ChatColor.YELLOW + "Available book types: " + availableTypesStr);
             return;
         }
-        
+
         // Get the enchantment level
         int level = 1;
         if (args.length > 1) {
@@ -374,63 +403,63 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                 return;
             }
         }
-        
+
         // Create the enchanted book with custom name
         ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
         EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
-        
+
         // Set a custom name for the enchanted book
         meta.setDisplayName(ChatColor.AQUA + "Book of " + enchantType.getDisplayName() + " " + enchantType.getRomanNumeral(level));
-        
+
         // Store enchantment data in the persistent data container
         PersistentDataContainer container = meta.getPersistentDataContainer();
         NamespacedKey key = new NamespacedKey(plugin, enchantType.getKey());
         container.set(key, PersistentDataType.INTEGER, level);
-        
+
         // Format enchantment info in lore to match vanilla-like appearance but with added details
         // This helps players understand what the enchantment does
         List<String> lore = new ArrayList<>();
-        
+
         // Add the enchantment name with proper formatting (like vanilla enchantments)
         // Purple color with no italics, just like vanilla enchanted books
         lore.add(ChatColor.LIGHT_PURPLE + enchantType.getDisplayName() + " " + enchantType.getRomanNumeral(level));
-        
+
         // Add description on a new line with gray color
         lore.add(ChatColor.GRAY + enchantType.getDescription());
-        
+
         // Set the lore
         meta.setLore(lore);
-        
+
         // Also store in the PersistentDataContainer for programmatic access
         NamespacedKey enchNameKey = new NamespacedKey(plugin, "book_enchant_name");
         container.set(enchNameKey, PersistentDataType.STRING, enchantType.getDisplayName() + " " + enchantType.getRomanNumeral(level));
-        
+
         // Add stored enchantment to make it look like a real enchanted book
         // This is what vanilla does - it adds the enchantment to the book's stored enchantments
         meta.addStoredEnchant(Enchantment.DURABILITY, 1, true);
-        
+
         // Hide the dummy enchantment we're using
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        
+
         // Apply meta to book
         book.setItemMeta(meta);
-        
+
         // Give the book to the player
         player.getInventory().addItem(book);
-        
+
         // Send success message with additional info about applying the enchantment
         sender.sendMessage(ChatColor.GREEN + "You received a Book of " + enchantType.getDisplayName() + " " + enchantType.getRomanNumeral(level) + ".");
-        
+
         // Show usage hint if the player is holding an item
         if (player.getInventory().getItemInMainHand() != null && player.getInventory().getItemInMainHand().getType() != Material.AIR) {
             Material handItem = player.getInventory().getItemInMainHand().getType();
             if (enchantType.canEnchantItem(player.getInventory().getItemInMainHand())) {
-                sender.sendMessage(ChatColor.GRAY + "You can apply this book to your " + 
-                    handItem.toString().toLowerCase().replace('_', ' ') + " using an anvil.");
+                sender.sendMessage(ChatColor.GRAY + "You can apply this book to your " +
+                        handItem.toString().toLowerCase().replace('_', ' ') + " using an anvil.");
             }
         }
     }
-    
+
     /**
      * Handles the summon command.
      * Summons a mob at the player's location.
@@ -444,19 +473,19 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
             return;
         }
-        
+
         Player player = (Player) sender;
-        
+
         // Check arguments
         if (args.length < 1) {
             sender.sendMessage(ChatColor.RED + "Usage: /guildadmin summon <mob_type>");
             sender.sendMessage(ChatColor.YELLOW + "Available mob types: Debug, FrostGiant, ShadowAssassin, CorruptedWarden");
             return;
         }
-        
+
         // Get the mob type
         String mobArg = args[0].toUpperCase();
-        
+
         // Parse mob type
         if (mobArg.equals("DEBUG")) {
             // Summon the Debug mob
@@ -479,15 +508,203 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.YELLOW + "Available mob types: Debug, FrostGiant, ShadowAssassin, CorruptedWarden");
         }
     }
-    
+
     /**
      * Handles the godmode command.
      * Toggles godmode for the player, granting them full immunity and making them invisible to mobs.
      *
      * @param sender The command sender
      */
+
+
+    /**
+     * Handles the healthbar command.
+     * Toggles health bars for mobs.
+     *
+     * @param sender The command sender
+     * @param args The command arguments
+     */
+    private void handleHealthBar(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("guildwars.admin.healthbar")) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return;
+        }
+
+        if (args.length < 1) {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin healthbar <on|off>");
+            return;
+        }
+
+        String option = args[0].toLowerCase();
+
+        if (option.equals("on")) {
+            visualEffectManager.setHealthBarsEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + "Health bars have been enabled.");
+            plugin.getConfig().set("general.visual-effects.health-bars.enabled", true);
+            plugin.saveConfig();
+        } else if (option.equals("off")) {
+            visualEffectManager.setHealthBarsEnabled(false);
+            sender.sendMessage(ChatColor.GREEN + "Health bars have been disabled.");
+            plugin.getConfig().set("general.visual-effects.health-bars.enabled", false);
+            plugin.saveConfig();
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin healthbar <on|off>");
+        }
+    }
+
+    /**
+     * Handles the mobmerge command.
+     * Toggles mob merging for lag reduction.
+     *
+     * @param sender The command sender
+     * @param args The command arguments
+     */
+    private void handleMobMerge(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("guildwars.admin.mobmerge")) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return;
+        }
+
+        if (args.length < 1) {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin mobmerge <on|off>");
+            return;
+        }
+
+        String option = args[0].toLowerCase();
+
+        if (option.equals("on")) {
+            mobMergeManager.setEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + "Mob merging has been enabled. Processing loaded chunks...");
+            mobMergeManager.processLoadedChunks();
+            plugin.getConfig().set("general.performance.mob-merging.enabled", true);
+            plugin.saveConfig();
+        } else if (option.equals("off")) {
+            mobMergeManager.setEnabled(false);
+            sender.sendMessage(ChatColor.GREEN + "Mob merging has been disabled.");
+            plugin.getConfig().set("general.performance.mob-merging.enabled", false);
+            plugin.saveConfig();
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin mobmerge <on|off>");
+        }
+    }
+
+    /**
+     * Handles the mob spawn command.
+     * Controls custom mob natural spawning and spawn rates.
+     *
+     * @param sender The command sender
+     * @param args The command arguments
+     */
+    private void handleMobSpawn(CommandSender sender, String[] args) {
+        // Check permission
+        if (!sender.hasPermission("guildwars.admin.mobspawn")) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+            return;
+        }
+        
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin mobspawn <on/off/warden/frost> [value]");
+            return;
+        }
+        
+        String option = args[1].toLowerCase();
+        
+        switch (option) {
+            case "on":
+                customMobSpawnManager.setNaturalSpawningEnabled(true);
+                sender.sendMessage(ChatColor.GREEN + "Custom mob natural spawning has been enabled!");
+                break;
+            case "off":
+                customMobSpawnManager.setNaturalSpawningEnabled(false);
+                sender.sendMessage(ChatColor.RED + "Custom mob natural spawning has been disabled!");
+                break;
+            case "warden":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Please specify a spawn rate value (0.01-1.0)");
+                    return;
+                }
+                
+                try {
+                    double rate = Double.parseDouble(args[2]);
+                    if (rate < 0.01 || rate > 1.0) {
+                        sender.sendMessage(ChatColor.RED + "Spawn rate must be between 0.01 and 1.0");
+                        return;
+                    }
+                    
+                    customMobSpawnManager.setCorruptedWardenSpawnRate(rate);
+                    sender.sendMessage(ChatColor.GREEN + "Corrupted Warden spawn rate set to " + rate);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid spawn rate. Use a decimal value (e.g., 0.12)");
+                }
+                break;
+            case "frost":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Please specify a spawn rate value (0.01-1.0)");
+                    return;
+                }
+                
+                try {
+                    double rate = Double.parseDouble(args[2]);
+                    if (rate < 0.01 || rate > 1.0) {
+                        sender.sendMessage(ChatColor.RED + "Spawn rate must be between 0.01 and 1.0");
+                        return;
+                    }
+                    
+                    customMobSpawnManager.setFrostGiantSpawnRate(rate);
+                    sender.sendMessage(ChatColor.GREEN + "Frost Giant spawn rate set to " + rate);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid spawn rate. Use a decimal value (e.g., 0.15)");
+                }
+                break;
+            default:
+                sender.sendMessage(ChatColor.RED + "Usage: /guildadmin mobspawn <on/off/warden/frost> [value]");
+                break;
+        }
+    }
+    
+    /**
+     * Handles the clearlag command.
+     * Controls the clear lag system or forces an immediate clear.
+     *
+     * @param sender The command sender
+     * @param args The command arguments
+     */
+    private void handleClearLag(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("guildwars.admin.clearlag")) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return;
+        }
+        
+        if (args.length < 1) {
+            boolean enabled = clearLagManager.isEnabled();
+            sender.sendMessage(ChatColor.YELLOW + "Clear lag is currently " + 
+                    (enabled ? ChatColor.GREEN + "enabled" : ChatColor.RED + "disabled") + ChatColor.YELLOW + ".");
+            sender.sendMessage(ChatColor.YELLOW + "Use /guildadmin clearlag <on|off> to toggle or /guildadmin clearlag now to force clear.");
+            return;
+        }
+        
+        String option = args[0].toLowerCase();
+        
+        if (option.equals("on")) {
+            clearLagManager.setEnabled(true);
+            sender.sendMessage(ChatColor.GREEN + "Clear lag has been enabled.");
+            plugin.getConfig().set("general.performance.clear-lag.enabled", true);
+            plugin.saveConfig();
+        } else if (option.equals("off")) {
+            clearLagManager.setEnabled(false);
+            sender.sendMessage(ChatColor.GREEN + "Clear lag has been disabled.");
+            plugin.getConfig().set("general.performance.clear-lag.enabled", false);
+            plugin.saveConfig();
+        } else if (option.equals("now")) {
+            sender.sendMessage(ChatColor.GREEN + "Forcing clear lag operation now...");
+            clearLagManager.forceClear();
+        } else {
+            sender.sendMessage(ChatColor.RED + "Usage: /guildadmin clearlag <on|off|now>");
+        }
+    }
+    
     private void handleGodMode(CommandSender sender) {
-        // Check if sender is a player
+        // This command can only be used by players
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
             return;
@@ -538,7 +755,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         
         if (args.length == 1) {
             // First argument - subcommands
-            String[] subCommands = {"delete", "reload", "about", "enchant", "give", "summon", "godmode"};
+            String[] subCommands = {"delete", "reload", "about", "enchant", "give", "summon", "godmode", "healthbar", "mobmerge", "clearlag"};
             String input = args[0].toLowerCase();
             
             for (String subCommand : subCommands) {

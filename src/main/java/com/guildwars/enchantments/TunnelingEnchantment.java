@@ -32,4 +32,21 @@ public class TunnelingEnchantment extends CustomEnchantment {
     public EnchantmentRarity getRarity() {
         return EnchantmentRarity.RARE;
     }
+    
+    @Override
+    public String getTranslationKey() {
+        return "enchantment.guildwars.tunneling";
+    }
+    
+    // These methods are already implemented in the CustomEnchantment parent class,
+    // but we provide them here for clarity
+    @Override
+    public int getMaxModifiedCost(int level) {
+        return getMinModifiedCost(level) + 20;
+    }
+    
+    @Override
+    public int getMinModifiedCost(int level) {
+        return level * 15;
+    }
 }

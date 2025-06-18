@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
@@ -22,6 +23,12 @@ public class VisualEffectManager {
     // Store entity health displays by entity UUID
     private final Map<UUID, ArmorStand> healthDisplays = new HashMap<>();
     
+    // Configuration settings
+    private boolean healthBarsEnabled;
+    private int maxVisibilityDistance;
+    private boolean visibleThroughWalls;
+    private int cleanupTime;
+    
     /**
      * Creates a new visual effect manager.
      *
@@ -29,6 +36,22 @@ public class VisualEffectManager {
      */
     public VisualEffectManager(GuildWars plugin) {
         this.plugin = plugin;
+        loadConfig();
+    }
+    
+    /**
+     * Loads configuration settings for visual effects.
+     */
+    public void loadConfig() {
+        // Load health bar settings
+        healthBarsEnabled = plugin.getConfig().getBoolean("general.visual-effects.health-bars.enabled", true);
+        maxVisibilityDistance = plugin.getConfig().getInt("general.visual-effects.health-bars.max-distance", 24);
+        visibleThroughWalls = plugin.getConfig().getBoolean("general.visual-effects.health-bars.visible-through-walls", false);
+        cleanupTime = plugin.getConfig().getInt("general.visual-effects.health-bars.cleanup-time", 60);
+        
+        plugin.getLogger().info("Health bars enabled: " + healthBarsEnabled);
+        plugin.getLogger().info("Health bar max distance: " + maxVisibilityDistance + " blocks");
+        plugin.getLogger().info("Health bars visible through walls: " + visibleThroughWalls);
     }
     
     /**
@@ -98,7 +121,8 @@ public class VisualEffectManager {
      * @param entity The entity to display health for
      */
     public void updateHealthBar(LivingEntity entity) {
-        if (entity == null || entity.isDead()) {
+        // Skip if health bars are disabled or entity is invalid
+        if (!healthBarsEnabled || entity == null || entity.isDead()) {
             return;
         }
         
@@ -134,7 +158,7 @@ public class VisualEffectManager {
             // Store reference to the armor stand
             healthDisplays.put(entity.getUniqueId(), newStand);
             
-            // Schedule removal when entity dies or after 60 seconds of no updates
+            // Schedule removal when entity dies or after configured time with no updates
             new BukkitRunnable() {
                 private int ticksWithoutUpdate = 0;
                 private final ArmorStand standRef = newStand;
@@ -144,7 +168,7 @@ public class VisualEffectManager {
                     ticksWithoutUpdate++;
                     
                     // Check if entity is dead or gone
-                    if (entity.isDead() || !entity.isValid() || ticksWithoutUpdate > 1200) {
+                    if (entity.isDead() || !entity.isValid() || ticksWithoutUpdate > cleanupTime * 20) {
                         standRef.remove();
                         healthDisplays.remove(entity.getUniqueId());
                         this.cancel();
@@ -153,8 +177,14 @@ public class VisualEffectManager {
                     
                     // Update position to follow entity
                     if (ticksWithoutUpdate % 5 == 0) { // Update position every 5 ticks
-                        Location newLoc = entity.getEyeLocation().add(0, 0.8, 0);
-                        standRef.teleport(newLoc);
+                        // Only update if entity is still valid
+                        if (entity.isValid()) {
+                            Location newLoc = entity.getEyeLocation().add(0, 0.8, 0);
+                            standRef.teleport(newLoc);
+                            
+                            // Update visibility based on nearby players
+                            updateVisibility(standRef, entity);
+                        }
                     }
                 }
             }.runTaskTimer(plugin, 20L, 1L);
@@ -216,6 +246,64 @@ public class VisualEffectManager {
         }
         
         return builder.toString();
+    }
+    
+    /**
+     * Removes all visual effects when the plugin is disabled.
+     */
+    /**
+     * Updates the visibility of a health bar based on nearby players.
+     * Implements the distance limitation and wall visibility settings.
+     * 
+     * @param stand The armor stand displaying the health bar
+     * @param entity The entity the health bar belongs to
+     */
+    private void updateVisibility(ArmorStand stand, LivingEntity entity) {
+        boolean shouldBeVisible = false;
+        
+        // Check if any players are nearby within configured distance
+        for (Player player : entity.getWorld().getPlayers()) {
+            double distance = player.getLocation().distance(entity.getLocation());
+            
+            // Check distance
+            if (distance <= maxVisibilityDistance) {
+                // Check line of sight if configured to not be visible through walls
+                if (visibleThroughWalls || player.hasLineOfSight(entity)) {
+                    shouldBeVisible = true;
+                    break;
+                }
+            }
+        }
+        
+        // Update visibility
+        stand.setCustomNameVisible(shouldBeVisible);
+    }
+    
+    /**
+     * Set whether health bars should be visible.
+     * 
+     * @param enabled True to enable health bars, false to disable
+     */
+    public void setHealthBarsEnabled(boolean enabled) {
+        this.healthBarsEnabled = enabled;
+        
+        // Hide all existing health bars if disabled
+        if (!enabled) {
+            for (ArmorStand stand : healthDisplays.values()) {
+                if (stand != null && !stand.isDead()) {
+                    stand.setCustomNameVisible(false);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Check if health bars are enabled.
+     * 
+     * @return True if health bars are enabled, false otherwise
+     */
+    public boolean areHealthBarsEnabled() {
+        return healthBarsEnabled;
     }
     
     /**
