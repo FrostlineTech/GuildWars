@@ -6,7 +6,7 @@
 
     <groupId>com.guildwars</groupId>
     <artifactId>GuildWars</artifactId>
-    <version>1.4.5 (Minecraft 1.21.16 Compatibility Update)</version>
+    <version>1.5 (Minecraft 1.21.16 Compatibility Update)</version>
     <packaging>jar</packaging>
 
     <name>GuildWars</name>

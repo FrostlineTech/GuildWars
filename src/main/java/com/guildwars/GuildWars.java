@@ -1,6 +1,7 @@
 package com.guildwars;
 
 import com.guildwars.commands.AdminCommand;
+import com.guildwars.commands.ClearCustomMobsCommand;
 import com.guildwars.commands.EnchantmentListCommand;
 import com.guildwars.commands.GuildCommand;
 import com.guildwars.commands.GuildsCommand;
@@ -157,12 +158,22 @@ public class GuildWars extends JavaPlugin {
             adminCommand.setExecutor(new AdminCommand(this, enchantmentManager, mobManager));
         }
         
-        // Register enchantments command
-        PluginCommand enchantmentsCommand = getCommand("enchantments");
-        if (enchantmentsCommand != null) {
-            // This registers both the executor and tab completer in the constructor
-            new EnchantmentListCommand(this);
-            getLogger().info("Enchantments command registered.");
+        // Register enchantment list command
+        PluginCommand enchantListCmd = getCommand("enchantmentlist");
+        if (enchantListCmd != null) {
+            EnchantmentListCommand enchantmentListCommand = new EnchantmentListCommand(this);
+            enchantListCmd.setExecutor(enchantmentListCommand);
+            enchantListCmd.setTabCompleter(enchantmentListCommand);
+            getLogger().info("Registered /enchantmentlist command.");
+        }
+        
+        // Register clear custom mobs command
+        PluginCommand clearMobsCmd = getCommand("clearcustommobs");
+        if (clearMobsCmd != null) {
+            ClearCustomMobsCommand clearCustomMobsCommand = new ClearCustomMobsCommand(this);
+            clearMobsCmd.setExecutor(clearCustomMobsCommand);
+            clearMobsCmd.setTabCompleter(clearCustomMobsCommand);
+            getLogger().info("Registered /clearcustommobs command.");
         }
     }
     

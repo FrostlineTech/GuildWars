@@ -1,5 +1,5 @@
 name: GuildWars
-version: '1.4.5'
+version: '1.5'
 main: com.guildwars.GuildWars
 api-version: '1.21'
 authors: [DakotaFryberger]
@@ -36,6 +36,11 @@ commands:
     usage: /<command> [category]
     aliases: [ench, customenchants]
     permission: guildwars.enchantments
+  clearcustommobs:
+    description: Clear all custom mobs from the server or current world
+    usage: /<command> [all|world]
+    aliases: [clearmobs, removemobs]
+    permission: guildwars.admin.clearmobs
 permissions:
   guildwars.admin:
     description: Gives access to all GuildWars commands
@@ -57,4 +62,7 @@ permissions:
     default: op
   guildwars.admin.reload:
     description: Allows reloading the plugin configuration
+    default: op
+  guildwars.admin.clearmobs:
+    description: Allows clearing custom mobs from the server
     default: op

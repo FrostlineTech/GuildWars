@@ -10,11 +10,15 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Wolf;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -32,6 +36,7 @@ public class CorruptedWarden implements Listener {
     
     private final JavaPlugin plugin;
     private final Random random = new Random();
+    private final String MINION_TAG = "warden_minion";
     
     /**
      * Creates a new CorruptedWarden instance.
@@ -322,6 +327,13 @@ public class CorruptedWarden implements Listener {
             zombie.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0);
             zombie.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
             
+            // Mark this zombie as a minion of the Corrupted Warden
+            zombie.getPersistentDataContainer().set(
+                new org.bukkit.NamespacedKey(plugin, MINION_TAG),
+                PersistentDataType.BYTE,
+                (byte) 1
+            );
+            
             // Add glow effect and prevent burning in daylight
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
@@ -354,6 +366,149 @@ public class CorruptedWarden implements Listener {
             if (nearby instanceof Player) {
                 Player player = (Player) nearby;
                 player.sendMessage(ChatColor.DARK_RED + "The Corrupted Warden summons minions to its aid!");
+            }
+        }
+    }
+    
+    /**
+     * Handles entity targeting to ensure proper targeting behavior:
+     * - Prevents Corrupted Wardens from targeting their own minions
+     * - Ensures Iron Golems target custom mobs
+     * 
+     * @param event The targeting event
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onEntityTarget(EntityTargetLivingEntityEvent event) {
+        Entity entity = event.getEntity();
+        LivingEntity target = event.getTarget();
+        
+        if (entity instanceof IronGolem) {
+            // If this is a Corrupted Warden
+            if (isCorruptedWarden((LivingEntity) entity)) {
+                // If the target is one of the warden's minions, cancel the targeting
+                if (target instanceof Zombie && isWardenMinion(target)) {
+                    event.setCancelled(true);
+                }
+            } 
+            // If this is a regular Iron Golem (not a Corrupted Warden)
+            else if (target != null && isCorruptedWarden(target)) {
+                // Make sure Golems are hostile to Corrupted Wardens
+                // The targeting is preserved (not cancelled) and priority increased
+                if (event.getReason() == EntityTargetLivingEntityEvent.TargetReason.CLOSEST_ENTITY) {
+                    // Boost targeting priority when golem notices a Corrupted Warden
+                    ((IronGolem) entity).setTarget(target);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Prevents damage between Corrupted Wardens and their minions.
+     * 
+     * @param event The damage event
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        // Prevent Corrupted Warden from damaging its minions
+        if (event.getDamager() instanceof LivingEntity && event.getEntity() instanceof LivingEntity) {
+            LivingEntity damager = (LivingEntity) event.getDamager();
+            LivingEntity victim = (LivingEntity) event.getEntity();
+            
+            // Warden attacking minion scenario
+            if (isCorruptedWarden(damager) && isWardenMinion(victim)) {
+                event.setCancelled(true);
+            }
+            
+            // Minion attacking warden scenario
+            if (isWardenMinion(damager) && isCorruptedWarden(victim)) {
+                event.setCancelled(true);
+            }
+            
+            // Minion attacking another minion scenario
+            if (isWardenMinion(damager) && isWardenMinion(victim)) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    /**
+     * Checks if an entity is a Warden's minion.
+     * 
+     * @param entity The entity to check
+     * @return True if the entity is a Warden's minion
+     */
+    public boolean isWardenMinion(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        
+        return entity.getPersistentDataContainer().has(
+            new org.bukkit.NamespacedKey(plugin, MINION_TAG),
+            PersistentDataType.BYTE
+        );
+    }
+    
+    /**
+     * Prevents wolves from following players too close to Corrupted Wardens.
+     * When a tamed wolf is within 100 blocks of a warden, it will refuse to follow
+     * the player any closer to the warden.
+     * 
+     * @param event The player move event
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        // Only check significant movements to reduce performance impact
+        if (event.getFrom().distanceSquared(event.getTo()) < 0.3) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        Location playerLoc = player.getLocation();
+        
+        // Check if there's a Corrupted Warden within 100 blocks
+        for (Entity entity : player.getNearbyEntities(100, 100, 100)) {
+            if (entity instanceof LivingEntity && isCorruptedWarden((LivingEntity) entity)) {
+                Location wardenLoc = entity.getLocation();
+                double distanceToWarden = playerLoc.distanceSquared(wardenLoc);
+                
+                // Now check for tamed wolves that belong to this player
+                for (Entity nearbyEntity : player.getNearbyEntities(20, 10, 20)) {
+                    if (nearbyEntity instanceof Wolf) {
+                        Wolf wolf = (Wolf) nearbyEntity;
+                        
+                        // Only affect tamed wolves that belong to this player
+                        if (wolf.isTamed() && player.equals(wolf.getOwner())) {
+                            Location wolfLoc = wolf.getLocation();
+                            double wolfDistanceToWarden = wolfLoc.distanceSquared(wardenLoc);
+                            
+                            // If the wolf is getting closer to the warden, stop it
+                            if (wolfDistanceToWarden < 10000) { // 100 blocks squared
+                                // If the player is moving closer to the warden
+                                // and the wolf would be following, stop the wolf
+                                if (distanceToWarden < wolfDistanceToWarden) {
+                                    // Make wolf sit to prevent it from following
+                                    if (!wolf.isSitting()) {
+                                        wolf.setSitting(true);
+                                        player.sendMessage(ChatColor.RED + "Your wolf refuses to approach the Corrupted Warden!");
+                                        
+                                        // Visual effect to show wolf's fear
+                                        wolf.getWorld().spawnParticle(
+                                            Particle.SMOKE_NORMAL,
+                                            wolf.getLocation().add(0, 0.7, 0),
+                                            10, 0.2, 0.2, 0.2, 0.02
+                                        );
+                                    }
+                                } else if (distanceToWarden > 10000 && wolf.isSitting()) {
+                                    // Allow wolf to follow again when far enough away
+                                    wolf.setSitting(false);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // We only need to check for the first Corrupted Warden found
+                break;
             }
         }
     }
